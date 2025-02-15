@@ -129,9 +129,14 @@ python lav_paint.py --config "configs/relight_inpaint/car.yaml"
 
 ## 📎 Citation 
 
-If you find our work helpful for your research, please consider giving a star ⭐
+If you find our work helpful for your research, please consider giving a star ⭐ and citation 📝 
 ```bibtex
-
+@article{zhou2025light,
+  title={Light-A-Video: Training-free Video Relighting via Progressive Light Fusion},
+  author={Zhou, Yujie and Bu, Jiazi and Ling, Pengyang and Zhang, Pan and Wu, Tong and Huang, Qidong and Li, Jinsong and Dong, Xiaoyi and Zang, Yuhang and Cao, Yuhang and others},
+  journal={arXiv preprint arXiv:2502.08590},
+  year={2025}
+}
 ```
 
 ## 📣 Disclaimer
