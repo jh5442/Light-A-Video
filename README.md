@@ -152,9 +152,6 @@ The VDM checkpoint is Wan2.1-T2V-1.3B-Diffusers, and it will be downloaded autom
 # relight with Wan2.1
 python lav_wan_relight.py --config "configs/wan_relight/bear.yaml"
 ```
-### Example
-
-
 
 ## 📎 Citation 
 

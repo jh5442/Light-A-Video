@@ -1,4 +1,5 @@
 n_prompt: "bad quality, worse quality"
+vdm_prompt: "a bear walking on the rock"
 relight_prompt: "a bear walking on the rock, nature lighting, soft light"
 video_path: "input_wan/bear.mp4"
 bg_source: "TOP"  ## LEFT, RIGHT, BOTTOM, TOP
