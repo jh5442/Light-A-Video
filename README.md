@@ -45,7 +45,12 @@ while maintaining the image quality,  ensuring coherent lighting transitions acr
 [![arXiv](https://img.shields.io/badge/arXiv-2502.08590-b31b1b.svg)](https://arxiv.org/abs/2502.08590)
 [![Project Page](https://img.shields.io/badge/Project-Website-green)](https://bujiazi.github.io/light-a-video.github.io/)
 
+## 💡 Demo
+[![]](https://github.com/user-attachments/assets/ea5a01b9-a5a5-4159-a61b-7fef8e44e6db)
+
 ## 📜 News
+
+**[2025/3/11]** Support [Wan2.1](https://github.com/Wan-Video/Wan2.1)!
 
 **[2025/2/11]** Code is available now!
 
@@ -85,7 +90,7 @@ We show more results in the [Project Page](https://bujiazi.github.io/light-a-vid
     <img src='__assets__/pipeline.png'/>
 </div>
 
-Light-A-Video leverages the the capabilities of image relighting models and VDM motion priors to achieve temporally consistent video relighting. 
+Light-A-Video leverages the capabilities of image relighting models and VDM motion priors to achieve temporally consistent video relighting. 
 By integrating the **Consistent Light Attention** to stabilize lighting source generation and employ the **Progressive Light Fusion** strategy
 for smooth appearance transitions.
 
@@ -127,6 +132,27 @@ python sam2.py --video_name car --x 255 --y 255
 python lav_paint.py --config "configs/relight_inpaint/car.yaml"
 ```
 
+## 🚝 More Video Diffusion Model Support
+
+Light-A-Video now supports Wan2.1 backbone, a leading DiT-based video foundation model.
+Now longer video relighting and diverse resolutions are enabled, with Flow Matching Scheduler.
+
+### Update Diffusers from source
+```bash
+conda activate lav
+
+git clone https://github.com/huggingface/diffusers.git
+cd diffusers
+pip install .
+```
+
+### Perform video relighting with Wan2.1
+The VDM checkpoint is Wan2.1-T2V-1.3B-Diffusers, and it will be downloaded automatically.
+```bash
+# relight with Wan2.1
+python lav_wan_relight.py --config "configs/wan_relight/bear.yaml"
+```
+
 ## 📎 Citation 
 
 If you find our work helpful for your research, please consider giving a star ⭐ and citation 📝 
@@ -150,3 +176,4 @@ The code is built upon the below repositories, we thank all the contributors for
 * [IC-Light](https://github.com/lllyasviel/IC-Light)
 * [AnimateDiff](https://github.com/guoyww/AnimateDiff)
 * [CogVideoX](https://github.com/THUDM/CogVideo)
+* [Wan2.1](https://github.com/Wan-Video/Wan2.1)

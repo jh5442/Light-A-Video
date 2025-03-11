@@ -2,46 +2,38 @@ import os
 import torch
 import imageio
 import argparse
-from types import MethodType
+import numpy as np
 import safetensors.torch as sf
-import torch.nn.functional as F
+from diffusers import AutoencoderKLWan
 from omegaconf import OmegaConf
-from transformers import CLIPTextModel, CLIPTokenizer
-from diffusers import MotionAdapter, EulerAncestralDiscreteScheduler, AutoencoderKL
-from diffusers import AutoencoderKL, UNet2DConditionModel, DPMSolverMultistepScheduler
-from diffusers.models.attention_processor import AttnProcessor2_0
+import torch.nn.functional as F
 from torch.hub import download_url_to_file
 
-from src.ic_light import BGSource
-from src.animatediff_pipe import AnimateDiffVideoToVideoPipeline
+from transformers import CLIPTextModel, CLIPTokenizer
+from diffusers import AutoencoderKL, UNet2DConditionModel, DPMSolverMultistepScheduler
+from diffusers.models.attention_processor import AttnProcessor2_0
+
 from src.ic_light_pipe import StableDiffusionImg2ImgPipeline
-from utils.tools import read_video, set_all_seed
+from src.wan_pipe import WanVideoToVideoPipeline
+from src.ic_light import BGSource
+from utils.tools import set_all_seed, read_video
 
 def main(args):
-    
+
     config  = OmegaConf.load(args.config)
     device = torch.device('cuda')
     adopted_dtype = torch.float16
     set_all_seed(42)
-    
+
     ## vdm model
-    adapter = MotionAdapter.from_pretrained(args.motion_adapter_model)
+    vae = AutoencoderKLWan.from_pretrained(args.vdm_model, subfolder="vae", torch_dtype=adopted_dtype)
+    pipe = WanVideoToVideoPipeline.from_pretrained(args.vdm_model, vae=vae, torch_dtype=adopted_dtype)
 
-    ## pipeline
-    pipe = AnimateDiffVideoToVideoPipeline.from_pretrained(args.sd_model, motion_adapter=adapter)
-    eul_scheduler = EulerAncestralDiscreteScheduler.from_pretrained(
-        args.sd_model,
-        subfolder="scheduler",
-        beta_schedule="linear",
-    )
-
-    pipe.scheduler = eul_scheduler
-    pipe.enable_vae_slicing()
     pipe = pipe.to(device=device, dtype=adopted_dtype)
     pipe.vae.requires_grad_(False)
-    pipe.unet.requires_grad_(False)
+    pipe.transformer.requires_grad_(False)
 
-    ## ic-light model
+    ## module
     tokenizer = CLIPTokenizer.from_pretrained(args.sd_model, subfolder="tokenizer")
     text_encoder = CLIPTextModel.from_pretrained(args.sd_model, subfolder="text_encoder")
     vae = AutoencoderKL.from_pretrained(args.sd_model, subfolder="vae")
@@ -55,7 +47,6 @@ def main(args):
     unet_original_forward = unet.forward
 
     def hooked_unet_forward(sample, timestep, encoder_hidden_states, **kwargs):
-        
         c_concat = kwargs['cross_attention_kwargs']['concat_conds'].to(sample)
         c_concat = torch.cat([c_concat] * (sample.shape[0] // c_concat.shape[0]), dim=0)
         new_sample = torch.cat([sample, c_concat], dim=1)
@@ -67,7 +58,6 @@ def main(args):
     if not os.path.exists(args.ic_light_model):
         download_url_to_file(url='https://huggingface.co/lllyasviel/ic-light/resolve/main/iclight_sd15_fc.safetensors', 
                              dst=args.ic_light_model)
-    
     sd_offset = sf.load_file(args.ic_light_model)
     sd_origin = unet.state_dict()
     sd_merged = {k: sd_origin[k] + sd_offset[k] for k in sd_origin.keys()}
@@ -83,14 +73,14 @@ def main(args):
     @torch.inference_mode()
     def custom_forward_CLA(self, 
                         hidden_states, 
-                        gamma=config.get("gamma", 0.5),
+                        gamma=config.get("gamma", 0.7),
                         encoder_hidden_states=None,
                         attention_mask=None, 
                         cross_attention_kwargs=None
                         ):
 
         batch_size, sequence_length, channel = hidden_states.shape
-        
+
         residual = hidden_states
         input_ndim = hidden_states.ndim
         if input_ndim == 4:
@@ -104,12 +94,12 @@ def main(args):
                 attention_mask = attention_mask.repeat_interleave(self.heads, dim=0)
         if self.group_norm is not None:
             hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
-        if encoder_hidden_states is None: 
+        if encoder_hidden_states is None:
             encoder_hidden_states = hidden_states
 
-        query = self.to_q(hidden_states) 
+        query = self.to_q(hidden_states)
         key = self.to_k(encoder_hidden_states)   
-        value = self.to_v(encoder_hidden_states) 
+        value = self.to_v(encoder_hidden_states)
         inner_dim = key.shape[-1]
         head_dim = inner_dim // self.heads
         query = query.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
@@ -118,19 +108,14 @@ def main(args):
 
         hidden_states = F.scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_p=0.0, is_causal=False)
         shape = query.shape
-        
-        # addition key and value
-        mean_key = key.reshape(2,-1,shape[1],shape[2],shape[3]).mean(dim=1,keepdim=True)
-        mean_value = value.reshape(2,-1,shape[1],shape[2],shape[3]).mean(dim=1,keepdim=True)
-        mean_key = mean_key.expand(-1,shape[0]//2,-1,-1,-1).reshape(shape[0],shape[1],shape[2],shape[3])
-        mean_value = mean_value.expand(-1,shape[0]//2,-1,-1,-1).reshape(shape[0],shape[1],shape[2],shape[3])
-        add_hidden_state = F.scaled_dot_product_attention(query, mean_key, mean_value, attn_mask=None, dropout_p=0.0, is_causal=False)
-        
-        # mix
-        hidden_states = (1-gamma)*hidden_states + gamma*add_hidden_state
-        
+        mean_key = key.reshape(2,-1,shape[1],shape[2],shape[3]).mean(dim=1,keepdim=True).expand(-1,shape[0]//2,-1,-1,-1).reshape(shape[0],shape[1],shape[2],shape[3])
+        mean_value = value.reshape(2,-1,shape[1],shape[2],shape[3]).mean(dim=1,keepdim=True).expand(-1,shape[0]//2,-1,-1,-1).reshape(shape[0],shape[1],shape[2],shape[3])
+        hidden_states_mean = F.scaled_dot_product_attention(query, mean_key, mean_value, attn_mask=None, dropout_p=0.0, is_causal=False)
+
+        hidden_states = (1-gamma)*hidden_states + gamma*hidden_states_mean
         hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
         hidden_states = hidden_states.to(query.dtype)
+
         hidden_states = self.to_out[0](hidden_states)
         hidden_states = self.to_out[1](hidden_states)
 
@@ -141,14 +126,18 @@ def main(args):
             hidden_states = hidden_states + residual
 
         hidden_states = hidden_states / self.rescale_output_factor
+
+
         return hidden_states
 
     ### attention
+    from types import MethodType
     @torch.inference_mode()
     def prep_unet_self_attention(unet):
-        for name, module in unet.named_modules(): 
+
+        for name, module in unet.named_modules():
             module_name = type(module).__name__
-            
+        
             name_split_list = name.split(".")
             cond_1 = name_split_list[0] in "up_blocks"
             cond_2 = name_split_list[-1] in ('attn1')
@@ -160,7 +149,7 @@ def main(args):
 
         return unet
 
-    ## consistency light attention
+    ## attn module
     unet = prep_unet_self_attention(unet)
 
     ## ic-light-scheduler
@@ -183,21 +172,25 @@ def main(args):
         feature_extractor=None,
         image_encoder=None
     )
-    ic_light_pipe = ic_light_pipe.to(device)
-    
+    ic_light_pipe = ic_light_pipe.to(device=device, dtype=adopted_dtype)
+    ic_light_pipe.vae.requires_grad_(False)
+    ic_light_pipe.unet.requires_grad_(False)
+
     #############################  params  ######################################
-    strength = config.get("strength", 0.5)
+    strength = config.get("strength", 0.4)
     num_step = config.get("num_step", 25)
     text_guide_scale = config.get("text_guide_scale", 2)
     seed = config.get("seed")
     image_width = config.get("width", 512)
     image_height = config.get("height", 512)
-    n_prompt = config.get("n_prompt", "")
+    negative_prompt = config.get("n_prompt", "")
+    vdm_prompt = config.get("vdm_prompt", "")
     relight_prompt = config.get("relight_prompt", "")
     video_path = config.get("video_path", "")
     bg_source = BGSource[config.get("bg_source")]
     save_path = config.get("save_path")
-
+    num_frames = config.get("num_frames", 49)
+    
     ##############################  infer  #####################################
     generator = torch.manual_seed(seed)
     video_name = os.path.basename(video_path)
@@ -212,29 +205,30 @@ def main(args):
             relight_prompt=relight_prompt,
             bg_source=bg_source,
             video=video_list,
-            prompt=relight_prompt,
-            strength=strength,
-            negative_prompt=n_prompt,
-            guidance_scale=text_guide_scale,
+            prompt=vdm_prompt, 
+            negative_prompt=negative_prompt,
+            strength=strength, 
+            guidance_scale=text_guide_scale, 
             num_inference_steps=num_inference_steps,
             height=image_height,
+            num_frames=num_frames,
             width=image_width,
-            generator=generator,
         )
 
         frames = output.frames[0]
+        frames = (frames * 255).astype(np.uint8)
         results_path = f"{save_path}/relight_{video_name}"
-        imageio.mimwrite(results_path, frames, fps=8)
+        imageio.mimwrite(results_path, frames, fps=14)
         print(f"relight! prompt:{relight_prompt}, light:{bg_source.value}, save in {results_path}.")
-    
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument("--sd_model", type=str, default="stablediffusionapi/realistic-vision-v51")
-    parser.add_argument("--motion_adapter_model", type=str, default="guoyww/animatediff-motion-adapter-v1-5-3")
+    parser.add_argument("--vdm_model", type=str, default="Wan2.1-T2V-1.3B-Diffusers")
     parser.add_argument("--ic_light_model", type=str, default="./models/iclight_sd15_fc.safetensors")
     
-    parser.add_argument("--config", type=str, default="configs/relight/car.yaml", help="the config file for each sample.")
+    parser.add_argument("--config", type=str, default="configs/wan_relight/man.yaml", help="the config file for each sample.")
     
     args = parser.parse_args()
     main(args)

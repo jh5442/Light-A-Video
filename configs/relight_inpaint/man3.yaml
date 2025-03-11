@@ -3,7 +3,7 @@ inpaint_prompt: "A man in the classroom"
 relight_prompt: "A man in the classroom, sunshine from the window"
 
 video_path: "input_animatediff/man3.mp4"
-bg_source: "RIGHT"  ## NONE, LEFT, RIGHT, BOTTOM, TOP
+bg_source: "RIGHT"  ## LEFT, RIGHT, BOTTOM, TOP
 save_path: "output"
 
 width: 512

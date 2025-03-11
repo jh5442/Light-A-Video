@@ -3,7 +3,7 @@ inpaint_prompt: "A cat walking on a runway, red and blue neon lights on both sid
 relight_prompt: "A cat walking on a runway, red and blue neon lights on both sides, key light"
 
 video_path: "input_animatediff/cat2.mp4"
-bg_source: "LEFT"  ## NONE, LEFT, RIGHT, BOTTOM, TOP
+bg_source: "LEFT"  ## LEFT, RIGHT, BOTTOM, TOP
 save_path: "output"
 
 width: 512

@@ -3,7 +3,7 @@ inpaint_prompt: "a car driving on the street"
 relight_prompt: "a car driving on the street, neon light"
 
 video_path: "input_animatediff/car.mp4"
-bg_source: "RIGHT"  ## NONE, LEFT, RIGHT, BOTTOM, TOP
+bg_source: "RIGHT"  ## LEFT, RIGHT, BOTTOM, TOP
 save_path: "output"
 
 width: 512

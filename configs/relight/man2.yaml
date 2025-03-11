@@ -1,7 +1,7 @@
 n_prompt: "bad quality, worse quality"
 relight_prompt: "handsome man with glasses, shadow from window, sunshine"
 video_path: "input_animatediff/man2.mp4"
-bg_source: "RIGHT"  ## NONE, LEFT, RIGHT, BOTTOM, TOP
+bg_source: "RIGHT"  ## LEFT, RIGHT, BOTTOM, TOP
 save_path: "output"
 
 width: 512

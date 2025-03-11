@@ -3,7 +3,7 @@ inpaint_prompt: "a wolf stands in an alley, detailed face, neon, Wong Kar-wai, w
 relight_prompt: "a wolf stands in an alley, detailed face, neon, Wong Kar-wai, warm, right light"
 
 video_path: "input_animatediff/wolf2.mp4"
-bg_source: "RIGHT"  ## NONE, LEFT, RIGHT, BOTTOM, TOP
+bg_source: "RIGHT"  ## LEFT, RIGHT, BOTTOM, TOP
 save_path: "output"
 
 width: 512
