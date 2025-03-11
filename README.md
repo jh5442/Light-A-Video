@@ -152,6 +152,9 @@ The VDM checkpoint is Wan2.1-T2V-1.3B-Diffusers, and it will be downloaded autom
 # relight with Wan2.1
 python lav_wan_relight.py --config "configs/wan_relight/bear.yaml"
 ```
+### Example
+
+
 
 ## 📎 Citation 
 
@@ -177,3 +180,6 @@ The code is built upon the below repositories, we thank all the contributors for
 * [AnimateDiff](https://github.com/guoyww/AnimateDiff)
 * [CogVideoX](https://github.com/THUDM/CogVideo)
 * [Wan2.1](https://github.com/Wan-Video/Wan2.1)
+
+It is greatly appreciated that the community has contributed various extensions and improvements to Light-A-Video.
+* [ComfyUI_Light_A_Video](https://github.com/smthemex/ComfyUI_Light_A_Video)
