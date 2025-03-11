@@ -25,7 +25,7 @@ def main(args):
     adopted_dtype = torch.float16
     set_all_seed(42)
 
-    ## vdm model
+    ## vdm model        
     vae = AutoencoderKLWan.from_pretrained(args.vdm_model, subfolder="vae", torch_dtype=adopted_dtype)
     pipe = WanVideoToVideoPipeline.from_pretrained(args.vdm_model, vae=vae, torch_dtype=adopted_dtype)
 
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument("--sd_model", type=str, default="stablediffusionapi/realistic-vision-v51")
-    parser.add_argument("--vdm_model", type=str, default="Wan-AI/Wan2.1-T2V-1.3B")
+    parser.add_argument("--vdm_model", type=str, default="Wan2.1_PATH")
     parser.add_argument("--ic_light_model", type=str, default="./models/iclight_sd15_fc.safetensors")
     
     parser.add_argument("--config", type=str, default="configs/wan_relight/man.yaml", help="the config file for each sample.")

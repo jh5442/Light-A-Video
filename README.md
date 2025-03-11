@@ -147,10 +147,14 @@ pip install .
 ```
 
 ### Perform video relighting with Wan2.1
-The VDM checkpoint is Wan2.1-T2V-1.3B-Diffusers, and it will be downloaded automatically.
+The VDM checkpoint is Wan2.1-T2V-1.3B-Diffusers, you need to download the model weight.
 ```bash
+# download the model weight to a custom model storage path
+pip install "huggingface_hub[cli]"
+huggingface-cli download Wan-AI/Wan2.1-T2V-1.3B --local-dir [Wan2.1_PATH]
+
 # relight with Wan2.1
-python lav_wan_relight.py --config "configs/wan_relight/bear.yaml"
+python lav_wan_relight.py --config "configs/wan_relight/bear.yaml" --vdm_model [Wan2.1_PATH]
 ```
 
 ## 📎 Citation 
