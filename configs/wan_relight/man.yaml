@@ -7,6 +7,7 @@ save_path: "output"
 
 width: 512
 height: 512
+num_frames: 49
 strength: 0.4
 gamma: 0.7
 num_step: 25

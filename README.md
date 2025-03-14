@@ -50,6 +50,8 @@ while maintaining the image quality,  ensuring coherent lighting transitions acr
 
 ## 📜 News
 
+**[2025/3/14]** Support [CogVideoX](https://github.com/THUDM/CogVideo)!
+
 **[2025/3/11]** Support [Wan2.1](https://github.com/Wan-Video/Wan2.1)!
 
 **[2025/2/11]** Code is available now!
@@ -59,7 +61,7 @@ while maintaining the image quality,  ensuring coherent lighting transitions acr
 ## 🏗️ Todo
 - [ ] Release a gradio demo.
 
-- [ ] Release Light-A-Video code with CogVideoX-2B pipeline.
+- [x] Release Light-A-Video code with CogVideoX-2B pipeline.
 
 ## 📚 Gallery
 We show more results in the [Project Page](https://bujiazi.github.io/light-a-video.github.io/).
@@ -135,7 +137,7 @@ python lav_paint.py --config "configs/relight_inpaint/car.yaml"
 ## 🚝 More Video Diffusion Model Support
 
 Light-A-Video now supports Wan2.1 backbone, a leading DiT-based video foundation model.
-Now longer video relighting and diverse resolutions are enabled, with Flow Matching Scheduler.
+Longer video relighting and diverse resolutions are enabled.
 
 ### Update Diffusers from source
 ```bash
@@ -147,10 +149,16 @@ pip install .
 ```
 
 ### Perform video relighting with Wan2.1
-The VDM checkpoint is Wan2.1-T2V-1.3B-Diffusers and it will be downloaded automatically.
+Wan2.1 with Flow-Matching scheduler.
+The VDM checkpoint is [Wan2.1-T2V-1.3B-Diffusers](https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B-Diffusers) and it will be downloaded automatically.
 ```bash
-# relight with Wan2.1
 python lav_wan_relight.py --config "configs/wan_relight/bear.yaml"
+```
+### Perform video relighting with CogVideoX
+CogVideoX with DDIM scheduler.
+The VDM checkpoint is [THUDM/CogVideoX-2b](https://huggingface.co/THUDM/CogVideoX-2b) and it will be downloaded automatically.
+```bash
+python lav_cog_relight.py --config "configs/cog_relight/bear.yaml"
 ```
 
 ## 📎 Citation 
@@ -178,5 +186,5 @@ The code is built upon the below repositories, we thank all the contributors for
 * [CogVideoX](https://github.com/THUDM/CogVideo)
 * [Wan2.1](https://github.com/Wan-Video/Wan2.1)
 
-It is greatly appreciated that the community has contributed various extensions and improvements to Light-A-Video.
+It is greatly appreciated that the community has contributed various extensions to Light-A-Video.
 * [ComfyUI_Light_A_Video](https://github.com/smthemex/ComfyUI_Light_A_Video)

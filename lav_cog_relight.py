@@ -2,20 +2,19 @@ import os
 import torch
 import imageio
 import argparse
-import numpy as np
 import safetensors.torch as sf
-from diffusers import AutoencoderKLWan
 from omegaconf import OmegaConf
 import torch.nn.functional as F
 from torch.hub import download_url_to_file
 
+from diffusers import CogVideoXDDIMScheduler
 from transformers import CLIPTextModel, CLIPTokenizer
-from diffusers import AutoencoderKL, UNet2DConditionModel, DPMSolverMultistepScheduler
 from diffusers.models.attention_processor import AttnProcessor2_0
+from diffusers import AutoencoderKL, UNet2DConditionModel, DPMSolverMultistepScheduler
 
-from src.ic_light_pipe import StableDiffusionImg2ImgPipeline
-from src.wan_pipe import WanVideoToVideoPipeline
 from src.ic_light import BGSource
+from src.ic_light_pipe import StableDiffusionImg2ImgPipeline
+from src.cogvideo_pipe import CogVideoXVideoToVideoPipeline
 from utils.tools import set_all_seed, read_video
 
 def main(args):
@@ -25,10 +24,9 @@ def main(args):
     adopted_dtype = torch.float16
     set_all_seed(42)
 
-    ## vdm model        
-    vae = AutoencoderKLWan.from_pretrained(args.vdm_model, subfolder="vae", torch_dtype=adopted_dtype)
-    pipe = WanVideoToVideoPipeline.from_pretrained(args.vdm_model, vae=vae, torch_dtype=adopted_dtype)
-
+    ## vdm model
+    pipe = CogVideoXVideoToVideoPipeline.from_pretrained(args.vdm_model, torch_dtype=adopted_dtype)
+    pipe.scheduler = CogVideoXDDIMScheduler.from_config(pipe.scheduler.config)
     pipe = pipe.to(device=device, dtype=adopted_dtype)
     pipe.vae.requires_grad_(False)
     pipe.transformer.requires_grad_(False)
@@ -38,9 +36,10 @@ def main(args):
     text_encoder = CLIPTextModel.from_pretrained(args.sd_model, subfolder="text_encoder")
     vae = AutoencoderKL.from_pretrained(args.sd_model, subfolder="vae")
     unet = UNet2DConditionModel.from_pretrained(args.sd_model, subfolder="unet")
+
     with torch.no_grad():
         new_conv_in = torch.nn.Conv2d(8, unet.conv_in.out_channels, unet.conv_in.kernel_size, unet.conv_in.stride, unet.conv_in.padding)
-        new_conv_in.weight.zero_() #torch.Size([320, 8, 3, 3])
+        new_conv_in.weight.zero_()
         new_conv_in.weight[:, :4, :, :].copy_(unet.conv_in.weight)
         new_conv_in.bias = unet.conv_in.bias
         unet.conv_in = new_conv_in
@@ -80,7 +79,7 @@ def main(args):
                         ):
 
         batch_size, sequence_length, channel = hidden_states.shape
-
+        
         residual = hidden_states
         input_ndim = hidden_states.ndim
         if input_ndim == 4:
@@ -98,7 +97,7 @@ def main(args):
             encoder_hidden_states = hidden_states
 
         query = self.to_q(hidden_states)
-        key = self.to_k(encoder_hidden_states)   
+        key = self.to_k(encoder_hidden_states)
         value = self.to_v(encoder_hidden_states)
         inner_dim = key.shape[-1]
         head_dim = inner_dim // self.heads
@@ -115,7 +114,6 @@ def main(args):
         hidden_states = (1-gamma)*hidden_states + gamma*hidden_states_mean
         hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
         hidden_states = hidden_states.to(query.dtype)
-
         hidden_states = self.to_out[0](hidden_states)
         hidden_states = self.to_out[1](hidden_states)
 
@@ -126,8 +124,6 @@ def main(args):
             hidden_states = hidden_states + residual
 
         hidden_states = hidden_states / self.rescale_output_factor
-
-
         return hidden_states
 
     ### attention
@@ -137,7 +133,7 @@ def main(args):
 
         for name, module in unet.named_modules():
             module_name = type(module).__name__
-        
+            
             name_split_list = name.split(".")
             cond_1 = name_split_list[0] in "up_blocks"
             cond_2 = name_split_list[-1] in ('attn1')
@@ -146,7 +142,7 @@ def main(args):
                 cond_3 = name_split_list[1] 
                 if cond_3 not in "3":
                     module.forward = MethodType(custom_forward_CLA, module)
-
+                    
         return unet
 
     ## attn module
@@ -181,15 +177,14 @@ def main(args):
     num_step = config.get("num_step", 25)
     text_guide_scale = config.get("text_guide_scale", 2)
     seed = config.get("seed")
-    image_width = config.get("width", 512)
-    image_height = config.get("height", 512)
+    image_width = config.get("width", 720)
+    image_height = config.get("height", 480)
     negative_prompt = config.get("n_prompt", "")
     vdm_prompt = config.get("vdm_prompt", "")
     relight_prompt = config.get("relight_prompt", "")
     video_path = config.get("video_path", "")
     bg_source = BGSource[config.get("bg_source")]
     save_path = config.get("save_path")
-    num_frames = config.get("num_frames", 49)
     
     ##############################  infer  #####################################
     generator = torch.manual_seed(seed)
@@ -199,37 +194,35 @@ def main(args):
     print("################## begin ##################")
     with torch.no_grad():
         num_inference_steps = int(round(num_step / strength))
-        
+
         output = pipe(
             ic_light_pipe=ic_light_pipe,
             relight_prompt=relight_prompt,
             bg_source=bg_source,
             video=video_list,
             prompt=vdm_prompt, 
+            strength=strength,
             negative_prompt=negative_prompt,
-            strength=strength, 
             guidance_scale=text_guide_scale, 
             num_inference_steps=num_inference_steps,
             height=image_height,
-            num_frames=num_frames,
             width=image_width,
             generator=generator,
         )
 
         frames = output.frames[0]
-        frames = (frames * 255).astype(np.uint8)
         results_path = f"{save_path}/relight_{video_name}"
         imageio.mimwrite(results_path, frames, fps=14)
-        print(f"relight! prompt:{relight_prompt}, light:{bg_source.value}, save in {results_path}.")
+        print(f"relight! \n prompt:{relight_prompt}, light:{bg_source.value}, save in {results_path}.")
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     parser.add_argument("--sd_model", type=str, default="stablediffusionapi/realistic-vision-v51")
-    parser.add_argument("--vdm_model", type=str, default="Wan-AI/Wan2.1-T2V-1.3B-Diffusers")
+    parser.add_argument("--vdm_model", type=str, default="THUDM/CogVideoX-2b")
     parser.add_argument("--ic_light_model", type=str, default="./models/iclight_sd15_fc.safetensors")
     
-    parser.add_argument("--config", type=str, default="configs/wan_relight/man.yaml", help="the config file for each sample.")
+    parser.add_argument("--config", type=str, default="configs/cog_relight/bear.yaml", help="the config file for each sample.")
     
     args = parser.parse_args()
     main(args)
