@@ -1063,11 +1063,11 @@ class StableDiffusionImg2ImgPipeline(
                 
                 # predict the noise residual
                 noise_pred = self.unet(
-                    latent_model_input, ## torch.Size([98, 4, 64, 64]) torch.Size([32, 4, 64, 64])
+                    latent_model_input,
                     t,
-                    encoder_hidden_states=prompt_embeds, ## torch.Size([98, 77, 768])
+                    encoder_hidden_states=prompt_embeds,
                     timestep_cond=timestep_cond,
-                    cross_attention_kwargs=self.cross_attention_kwargs,# torch.Size([49, 4, 64, 64])
+                    cross_attention_kwargs=self.cross_attention_kwargs,
                     added_cond_kwargs=added_cond_kwargs, 
                     return_dict=False,
                 )[0]

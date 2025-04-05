@@ -17,6 +17,7 @@ from src.ic_light_pipe import StableDiffusionImg2ImgPipeline
 from src.wan_pipe import WanVideoToVideoPipeline
 from src.ic_light import BGSource
 from utils.tools import set_all_seed, read_video
+from diffusers import FlowMatchEulerDiscreteScheduler
 
 def main(args):
 
@@ -28,7 +29,9 @@ def main(args):
     ## vdm model        
     vae = AutoencoderKLWan.from_pretrained(args.vdm_model, subfolder="vae", torch_dtype=adopted_dtype)
     pipe = WanVideoToVideoPipeline.from_pretrained(args.vdm_model, vae=vae, torch_dtype=adopted_dtype)
-
+    FlowMatching_scheduler = FlowMatchEulerDiscreteScheduler(shift=3.0)
+    pipe.scheduler = FlowMatching_scheduler
+    
     pipe = pipe.to(device=device, dtype=adopted_dtype)
     pipe.vae.requires_grad_(False)
     pipe.transformer.requires_grad_(False)
@@ -40,7 +43,7 @@ def main(args):
     unet = UNet2DConditionModel.from_pretrained(args.sd_model, subfolder="unet")
     with torch.no_grad():
         new_conv_in = torch.nn.Conv2d(8, unet.conv_in.out_channels, unet.conv_in.kernel_size, unet.conv_in.stride, unet.conv_in.padding)
-        new_conv_in.weight.zero_() #torch.Size([320, 8, 3, 3])
+        new_conv_in.weight.zero_()
         new_conv_in.weight[:, :4, :, :].copy_(unet.conv_in.weight)
         new_conv_in.bias = unet.conv_in.bias
         unet.conv_in = new_conv_in

@@ -208,7 +208,7 @@ def main(args):
 
     print("################## begin ##################")
     ## get foreground video
-    fg_video_tensor = get_fg_video(video_list, mask_list, device, adopted_dtype) ## torch.Size([16, 3, 512, 512])
+    fg_video_tensor = get_fg_video(video_list, mask_list, device, adopted_dtype)
 
     with torch.no_grad():
         relighter = Relighter(

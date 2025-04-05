@@ -683,7 +683,6 @@ class AnimateDiffVideoToVideoPipeline(
                     for i in range(batch_size)
                 ]
             else:
-                ## torch.Size([1, 16, 3, 512, 512])
                 init_latents = [self.encode_video(vid, generator, decode_chunk_size).unsqueeze(0) for vid in video]
 
             init_latents = torch.cat(init_latents, dim=0)
@@ -936,12 +935,11 @@ class AnimateDiffVideoToVideoPipeline(
         # 5. Prepare latent variables
         if latents is None:
             video = self.video_processor.preprocess_video(video, height=height, width=width)
-            # Move the number of frames before the number of channels.
             video = video.permute(0, 2, 1, 3, 4)
-            video = video.to(device=device, dtype=prompt_embeds.dtype) ## torch.Size([1, 16, 3, 512, 512])
+            video = video.to(device=device, dtype=prompt_embeds.dtype)
             org_target = rearrange(video, "1 f c h w -> 1 c f h w")
         num_channels_latents = self.unet.config.in_channels
-        latents = self.prepare_latents( ## torch.Size([1, 4, 16, 64, 64])
+        latents = self.prepare_latents(
             video=video,
             height=height,
             width=width,
