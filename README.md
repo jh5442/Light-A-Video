@@ -33,6 +33,7 @@ zero-shot illumination control of any given video sequences or foreground sequen
 
 [![arXiv](https://img.shields.io/badge/arXiv-2502.08590-b31b1b.svg)](https://arxiv.org/abs/2502.08590)
 [![Project Page](https://img.shields.io/badge/Project-Website-green)](https://bujiazi.github.io/light-a-video.github.io/)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Demo-red)](https://huggingface.co/spaces/fffiloni/Light-A-Video)
 
 ## 💡 Demo
 [![]](https://github.com/user-attachments/assets/ea5a01b9-a5a5-4159-a61b-7fef8e44e6db)
@@ -48,7 +49,7 @@ zero-shot illumination control of any given video sequences or foreground sequen
 **[2025/2/10]** The paper and project page are released!
 
 ## 🏗️ Todo
-- [ ] Release a gradio demo.
+- [x] Release a gradio demo.
 
 - [x] Release Light-A-Video code with CogVideoX-2B pipeline.
 
