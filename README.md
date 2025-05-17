@@ -3,7 +3,7 @@
 </div>
 
 ---
-### ⭐️ **Our team's works:** [[**MotionClone**](https://bujiazi.github.io/motionclone.github.io/)]  [[**ByTheWay**](https://github.com/Bujiazi/ByTheWay)] 
+### ⭐️ **Our team's works:** [[**HiFlow**](https://bujiazi.github.io/hiflow.github.io/)]  [[**MotionClone**](https://bujiazi.github.io/motionclone.github.io/)]  [[**ByTheWay**](https://github.com/Bujiazi/ByTheWay)] 
 
 ## Light-A-Video: Training-free Video Relighting via Progressive Light Fusion
 This repository is the official implementation of Light-A-Video. It is a **training-free framework** that enables 
