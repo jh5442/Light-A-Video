@@ -40,6 +40,8 @@ zero-shot illumination control of any given video sequences or foreground sequen
 
 ## 📜 News
 
+**[2025/6/26]** Happy to announce that Light-A-Video is accepted by ICCV 2025!
+
 **[2025/3/14]** Support [CogVideoX](https://github.com/THUDM/CogVideo)!
 
 **[2025/3/11]** Support [Wan2.1](https://github.com/Wan-Video/Wan2.1)!
