@@ -1,0 +1,15 @@
+n_prompt: "bad quality, worse quality"
+vdm_prompt: "a girl walking on the street"
+relight_prompt: "a girl walking on the street, neon light"
+video_path: "/home/ubuntu/jin/data/test_03_and_04/test_03_5s.mp4"
+bg_source: "LEFT"  ## LEFT, RIGHT, BOTTOM, TOP
+save_path: "output"
+
+width: 672
+height: 896
+num_frames: 49
+strength: 0.4
+gamma: 0.7
+num_step: 25
+text_guide_scale: 2
+seed: 42

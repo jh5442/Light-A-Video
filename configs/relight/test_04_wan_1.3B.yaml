@@ -1,0 +1,13 @@
+n_prompt: "bad quality, worse quality"
+relight_prompt: "a man playing basketball, neon light"
+video_path: "/home/ubuntu/jin/data/test_03_and_04/test_04_5s.mp4"
+bg_source: "LEFT"  ## LEFT, RIGHT, BOTTOM, TOP
+save_path: "output"
+
+width: 576
+height: 1024
+strength: 0.5
+gamma: 0.5
+num_step: 25
+text_guide_scale: 2
+seed: 2060
